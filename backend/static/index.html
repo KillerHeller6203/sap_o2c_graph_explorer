@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SAP O2C Graph Explorer</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0f1117;
+    --panel: #1a1d27;
+    --border: #2a2d3a;
+    --accent: #6c63ff;
+    --accent2: #00d4aa;
+    --text: #e2e8f0;
+    --muted: #8892a0;
+    --danger: #ff6b6b;
+  }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* Header */
+  header { padding: 12px 20px; background: var(--panel); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+  header h1 { font-size: 1.1rem; font-weight: 700; color: var(--accent); letter-spacing: .5px; }
+  header span { color: var(--muted); font-size: .8rem; }
+  .badge { background: var(--accent); color: #fff; font-size: .7rem; padding: 2px 8px; border-radius: 999px; font-weight: 600; }
+
+  /* Main layout */
+  .main { display: flex; flex: 1; overflow: hidden; }
+
+  /* Graph panel */
+  #graph-panel { flex: 1; position: relative; overflow: hidden; background: var(--bg); }
+  #graph-svg { width: 100%; height: 100%; }
+
+  /* Legend */
+  .legend { position: absolute; top: 12px; left: 12px; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; font-size: .75rem; display: flex; flex-direction: column; gap: 5px; }
+  .legend-item { display: flex; align-items: center; gap: 8px; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+  /* Controls */
+  .controls { position: absolute; top: 12px; right: 12px; display: flex; flex-direction: column; gap: 6px; }
+  .ctrl-btn { background: var(--panel); border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 6px 10px; cursor: pointer; font-size: .8rem; transition: background .15s; }
+  .ctrl-btn:hover { background: var(--accent); }
+
+  /* Tooltip */
+  #tooltip { position: absolute; background: var(--panel); border: 1px solid var(--accent); border-radius: 8px; padding: 10px 14px; font-size: .78rem; pointer-events: none; display: none; max-width: 220px; z-index: 10; }
+  #tooltip b { color: var(--accent2); display: block; margin-bottom: 4px; }
+  #tooltip .meta-row { color: var(--muted); margin-top: 2px; }
+
+  /* Chat panel */
+  #chat-panel { width: 380px; display: flex; flex-direction: column; border-left: 1px solid var(--border); background: var(--panel); flex-shrink: 0; }
+  #chat-header { padding: 12px 16px; border-bottom: 1px solid var(--border); font-size: .85rem; font-weight: 600; color: var(--accent2); display: flex; align-items: center; gap: 8px; }
+  #chat-header::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--accent2); display: inline-block; }
+  #messages { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+  .msg { max-width: 100%; padding: 10px 13px; border-radius: 10px; font-size: .83rem; line-height: 1.5; animation: fadeIn .2s; }
+  .msg.user { background: var(--accent); color: #fff; align-self: flex-end; border-bottom-right-radius: 3px; }
+  .msg.bot { background: #242736; color: var(--text); align-self: flex-start; border-bottom-left-radius: 3px; }
+  .msg.error { background: #3a1f1f; color: var(--danger); border-left: 3px solid var(--danger); }
+  .msg.system { background: transparent; color: var(--muted); font-size: .75rem; text-align: center; border: 1px dashed var(--border); }
+  .sql-block { margin-top: 8px; background: #1a1d27; border-radius: 6px; padding: 8px 10px; font-family: monospace; font-size: .72rem; color: #a8d8a8; white-space: pre-wrap; word-break: break-all; max-height: 120px; overflow-y: auto; }
+  .sql-toggle { color: var(--muted); font-size: .72rem; cursor: pointer; margin-top: 4px; text-decoration: underline; }
+  .table-wrap { margin-top: 8px; overflow-x: auto; max-height: 140px; overflow-y: auto; border-radius: 6px; border: 1px solid var(--border); }
+  table { border-collapse: collapse; font-size: .7rem; width: 100%; }
+  th { background: #1e2130; color: var(--muted); padding: 5px 8px; text-align: left; position: sticky; top: 0; }
+  td { padding: 4px 8px; border-top: 1px solid var(--border); color: var(--text); white-space: nowrap; }
+  tr:hover td { background: #1e2130; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* Input area */
+  #input-area { padding: 10px 12px; border-top: 1px solid var(--border); display: flex; gap: 8px; }
+  #query-input { flex: 1; background: #242736; border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 8px 12px; font-size: .83rem; resize: none; height: 60px; font-family: inherit; }
+  #query-input:focus { outline: none; border-color: var(--accent); }
+  #send-btn { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 0 16px; cursor: pointer; font-size: 1.1rem; transition: opacity .15s; }
+  #send-btn:hover { opacity: .85; }
+  #send-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+  /* Suggestions */
+  #suggestions { padding: 0 12px 10px; display: flex; flex-wrap: wrap; gap: 6px; }
+  .sug { background: #242736; border: 1px solid var(--border); color: var(--muted); border-radius: 999px; padding: 4px 10px; font-size: .72rem; cursor: pointer; transition: all .15s; }
+  .sug:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  /* Loading */
+  .typing { display: flex; gap: 5px; padding: 5px; align-items: center; }
+  .dot { width: 6px; height: 6px; background: var(--muted); border-radius: 50%; animation: bounce .6s infinite; }
+  .dot:nth-child(2) { animation-delay: .15s; }
+  .dot:nth-child(3) { animation-delay: .3s; }
+  @keyframes bounce { 0%,80%,100% { transform: translateY(0); } 40% { transform: translateY(-5px); } }
+
+  /* Graph node / edge styles set via JS/D3 */
+  .node circle { stroke-width: 2; cursor: pointer; transition: r .15s; }
+  .node text { font-size: 9px; fill: var(--muted); pointer-events: none; }
+  .link { stroke-opacity: 0.5; stroke-width: 1.5; }
+  .link-label { font-size: 8px; fill: #555; pointer-events: none; }
+
+  /* Node highlight pulse */
+  @keyframes glow { 0%,100% { filter: drop-shadow(0 0 4px rgba(255,255,255,0.3)); } 50% { filter: drop-shadow(0 0 14px rgba(108,99,255,0.9)); } }
+  .node.highlighted circle { animation: glow 1.2s ease-in-out infinite; stroke: #fff !important; stroke-width: 3 !important; }
+  .node.highlighted text { fill: #fff !important; font-weight: 700; }
+  .memory-badge { background: var(--accent2); color: #0f1117; font-size: .65rem; padding: 1px 7px; border-radius: 999px; font-weight: 600; margin-left: 8px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>⬡ SAP O2C Graph Explorer</h1>
+  <span>Order → Delivery → Billing → Payment</span>
+  <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+    <span class="badge" id="node-count">...</span>
+    <span style="color:var(--muted);font-size:.75rem">nodes</span>
+  </div>
+</header>
+
+<div class="main">
+  <!-- Graph -->
+  <div id="graph-panel">
+    <svg id="graph-svg"></svg>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#6c63ff"></div> Customer</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#00d4aa"></div> Sales Order</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#f7b731"></div> Delivery</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#fd9644"></div> Billing Doc</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#e056a0"></div> Journal Entry</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#4ecdc4"></div> Payment</div>
+    </div>
+    <div class="controls">
+      <button class="ctrl-btn" onclick="resetZoom()">⌖ Reset</button>
+      <button class="ctrl-btn" onclick="loadGraph(50)">+More</button>
+    </div>
+    <div id="tooltip"></div>
+  </div>
+
+  <!-- Chat -->
+  <div id="chat-panel">
+    <div id="chat-header">Conversational Query Interface<span class="memory-badge" id="mem-badge" style="display:none">memory</span></div>
+    <div id="suggestions">
+      <span class="sug" onclick="fillQuery(this)">Which products have most billing docs?</span>
+      <span class="sug" onclick="fillQuery(this)">Trace billing doc 90504298</span>
+      <span class="sug" onclick="fillQuery(this)">Sales orders with no billing</span>
+      <span class="sug" onclick="fillQuery(this)">Top 10 customers by revenue</span>
+      <span class="sug" onclick="fillQuery(this)">Delivered but not billed orders</span>
+    </div>
+    <div id="messages">
+      <div class="msg system">Ask any question about the SAP Order-to-Cash dataset. Results are grounded in live data.</div>
+    </div>
+    <div id="input-area">
+      <textarea id="query-input" placeholder="Ask a question about the data…" onkeydown="handleKey(event)"></textarea>
+      <button id="send-btn" onclick="sendQuery()">➤</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Graph ─────────────────────────────────────────────────────────────────
+const COLOR = {
+  Customer:     '#6c63ff',
+  SalesOrder:   '#00d4aa',
+  Delivery:     '#f7b731',
+  BillingDoc:   '#fd9644',
+  JournalEntry: '#e056a0',
+  Payment:      '#4ecdc4',
+};
+
+const RADIUS = { Customer: 14, SalesOrder: 12, Delivery: 10, BillingDoc: 10, JournalEntry: 9, Payment: 8 };
+let queryCount = 0;
+
+let svg, sim, gMain;
+
+function initGraph() {
+  const el = document.getElementById('graph-svg');
+  svg = d3.select(el);
+  const zoom = d3.zoom().scaleExtent([0.1, 4]).on('zoom', e => gMain.attr('transform', e.transform));
+  svg.call(zoom);
+  gMain = svg.append('g');
+  svg.append('defs').append('marker')
+    .attr('id', 'arrow').attr('viewBox', '0 -5 10 10').attr('refX', 22)
+    .attr('markerWidth', 6).attr('markerHeight', 6).attr('orient', 'auto')
+    .append('path').attr('d', 'M0,-5L10,0L0,5').attr('fill', '#444');
+  window._zoom = zoom;
+}
+
+function resetZoom() {
+  svg.transition().duration(400).call(window._zoom.transform, d3.zoomIdentity.translate(0,0).scale(0.8));
+}
+
+async function loadGraph(limit = 30) {
+  const res = await fetch(`/graph?limit=${limit}`);
+  const data = await res.json();
+  document.getElementById('node-count').textContent = data.nodes.length;
+  renderGraph(data.nodes, data.edges);
+}
+
+function renderGraph(nodes, edges) {
+  gMain.selectAll('*').remove();
+  const w = document.getElementById('graph-svg').clientWidth;
+  const h = document.getElementById('graph-svg').clientHeight;
+
+  const nodeById = {};
+  nodes.forEach(n => nodeById[n.id] = n);
+
+  const links = edges.map(e => ({
+    source: e.source, target: e.target, label: e.label
+  })).filter(e => nodeById[e.source] && nodeById[e.target]);
+
+  sim = d3.forceSimulation(nodes)
+    .force('link', d3.forceLink(links).id(d => d.id).distance(80))
+    .force('charge', d3.forceManyBody().strength(-200))
+    .force('center', d3.forceCenter(w/2, h/2))
+    .force('collision', d3.forceCollide(20));
+
+  // Edges
+  const link = gMain.append('g').selectAll('line')
+    .data(links).join('line')
+    .attr('class', 'link')
+    .attr('stroke', '#333')
+    .attr('marker-end', 'url(#arrow)');
+
+  const linkLabel = gMain.append('g').selectAll('text')
+    .data(links).join('text')
+    .attr('class', 'link-label')
+    .text(d => d.label);
+
+  // Nodes
+  const node = gMain.append('g').selectAll('g')
+    .data(nodes).join('g')
+    .attr('class', 'node')
+    .call(d3.drag()
+      .on('start', (e, d) => { if (!e.active) sim.alphaTarget(0.3).restart(); d.fx=d.x; d.fy=d.y; })
+      .on('drag',  (e, d) => { d.fx=e.x; d.fy=e.y; })
+      .on('end',   (e, d) => { if (!e.active) sim.alphaTarget(0); d.fx=null; d.fy=null; })
+    )
+    .on('mouseover', showTooltip)
+    .on('mouseout', hideTooltip)
+    .on('click', onNodeClick);
+
+  node.append('circle')
+    .attr('r', d => RADIUS[d.type] || 10)
+    .attr('fill', d => COLOR[d.type] || '#888')
+    .attr('stroke', '#0f1117');
+
+  node.append('text')
+    .attr('dy', d => (RADIUS[d.type]||10) + 10)
+    .attr('text-anchor', 'middle')
+    .text(d => d.label.length > 12 ? d.label.slice(0,11)+'…' : d.label);
+
+  sim.on('tick', () => {
+    link.attr('x1', d => d.source.x).attr('y1', d => d.source.y)
+        .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
+    linkLabel.attr('x', d => (d.source.x+d.target.x)/2).attr('y', d => (d.source.y+d.target.y)/2);
+    node.attr('transform', d => `translate(${d.x},${d.y})`);
+  });
+}
+
+const tooltip = document.getElementById('tooltip');
+function showTooltip(event, d) {
+  let html = `<b>${d.type}: ${d.label}</b>`;
+  for (const [k,v] of Object.entries(d.meta||{})) {
+    if (v !== null && v !== undefined && v !== '') html += `<div class="meta-row">${k}: ${v}</div>`;
+  }
+  tooltip.innerHTML = html;
+  tooltip.style.display = 'block';
+  moveTip(event);
+}
+function hideTooltip() { tooltip.style.display = 'none'; }
+document.getElementById('graph-panel').addEventListener('mousemove', moveTip);
+function moveTip(e) {
+  const p = document.getElementById('graph-panel').getBoundingClientRect();
+  tooltip.style.left = (e.clientX - p.left + 14) + 'px';
+  tooltip.style.top  = (e.clientY - p.top  + 14) + 'px';
+}
+
+function onNodeClick(event, d) {
+  // Pre-fill chat with a query about this node
+  const queries = {
+    SalesOrder: `Trace the full flow for sales order ${d.label}`,
+    Customer:   `Show all orders and billing for customer ${d.label}`,
+    Delivery:   `Show billing documents for delivery ${d.label}`,
+    BillingDoc: `Show journal entries for billing document ${d.label}`,
+    Payment:    `Show payment details for ${d.label}`,
+  };
+  if (queries[d.type]) {
+    document.getElementById('query-input').value = queries[d.type];
+    document.getElementById('query-input').focus();
+  }
+}
+
+// ── Chat ──────────────────────────────────────────────────────────────────
+function fillQuery(el) {
+  document.getElementById('query-input').value = el.textContent;
+  document.getElementById('query-input').focus();
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendQuery(); }
+}
+
+async function sendQuery() {
+  const input = document.getElementById('query-input');
+  const q = input.value.trim();
+  if (!q) return;
+
+  input.value = '';
+  addMsg(q, 'user');
+
+  const btn = document.getElementById('send-btn');
+  btn.disabled = true;
+  const loader = addTyping();
+
+  try {
+    const res = await fetch('/query', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({query: q})
+    });
+    const data = await res.json();
+    loader.remove();
+    addBotMsg(data);
+    // Highlight referenced nodes on the graph
+    highlightNodes(data.highlightIds || []);
+    // Show memory badge after first query
+    queryCount++;
+    if (queryCount > 1) document.getElementById('mem-badge').style.display = 'inline';
+  } catch(e) {
+    loader.remove();
+    addMsg('Network error. Is the backend running?', 'error');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// ── Node Highlighting ─────────────────────────────────────────────────────
+function highlightNodes(ids) {
+  // Clear old highlights
+  d3.selectAll('.node').classed('highlighted', false);
+  if (!ids || ids.length === 0) return;
+  const idSet = new Set(ids);
+  d3.selectAll('.node').each(function(d) {
+    if (idSet.has(d.id)) {
+      d3.select(this).classed('highlighted', true);
+    }
+  });
+}
+
+function addMsg(text, cls) {
+  const box = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = `msg ${cls}`;
+  div.textContent = text;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+  return div;
+}
+
+function addBotMsg(data) {
+  const box = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = 'msg bot';
+
+  // Response text
+  const p = document.createElement('div');
+  p.textContent = data.response || '—';
+  div.appendChild(p);
+
+  // SQL toggle
+  if (data.sql) {
+    const tog = document.createElement('div');
+    tog.className = 'sql-toggle';
+    tog.textContent = '▶ Show SQL';
+    const sqlBlock = document.createElement('div');
+    sqlBlock.className = 'sql-block';
+    sqlBlock.style.display = 'none';
+    sqlBlock.textContent = data.sql;
+    tog.onclick = () => {
+      const hidden = sqlBlock.style.display === 'none';
+      sqlBlock.style.display = hidden ? 'block' : 'none';
+      tog.textContent = hidden ? '▼ Hide SQL' : '▶ Show SQL';
+    };
+    div.appendChild(tog);
+    div.appendChild(sqlBlock);
+  }
+
+  // Data table
+  if (data.data && data.data.length > 0) {
+    const wrap = document.createElement('div');
+    wrap.className = 'table-wrap';
+    const t = document.createElement('table');
+    const headers = Object.keys(data.data[0]);
+    const thead = t.createTHead();
+    const hrow = thead.insertRow();
+    headers.forEach(h => { const th = document.createElement('th'); th.textContent = h; hrow.appendChild(th); });
+    const tbody = t.createTBody();
+    data.data.slice(0, 20).forEach(row => {
+      const tr = tbody.insertRow();
+      headers.forEach(h => { const td = tr.insertCell(); td.textContent = row[h] ?? ''; });
+    });
+    if (data.data.length > 20) {
+      const tr = tbody.insertRow();
+      const td = tr.insertCell(); td.colSpan = headers.length;
+      td.style.color = 'var(--muted)'; td.style.textAlign = 'center';
+      td.textContent = `… and ${data.data.length - 20} more rows`;
+    }
+    wrap.appendChild(t);
+    div.appendChild(wrap);
+  }
+
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+}
+
+function addTyping() {
+  const box = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = 'msg bot';
+  div.innerHTML = '<div class="typing"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>';
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+  return div;
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────
+initGraph();
+loadGraph(30);
+</script>
+</body>
+</html>
