@@ -97,6 +97,64 @@
   .node.highlighted circle { animation: glow 1.2s ease-in-out infinite; stroke: #fff !important; stroke-width: 3 !important; }
   .node.highlighted text { fill: #fff !important; font-weight: 700; }
   .memory-badge { background: var(--accent2); color: #0f1117; font-size: .65rem; padding: 1px 7px; border-radius: 999px; font-weight: 600; margin-left: 8px; }
+
+  /* ── Mobile Tab Bar ─────────────────────────────────────────────────────── */
+  #mobile-tabs { display: none; }
+
+  @media (max-width: 767px) {
+    header h1 { font-size: .9rem; }
+    header span { display: none; }
+
+    /* Stack panels vertically */
+    .main { flex-direction: column; }
+
+    /* Tab bar at top */
+    #mobile-tabs {
+      display: flex;
+      flex-shrink: 0;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 10px;
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-size: .82rem;
+      font-weight: 600;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all .15s;
+    }
+    .tab-btn.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+
+    /* Each panel takes full remaining height, toggled by JS */
+    #graph-panel {
+      flex: 1;
+      min-height: 0;
+    }
+    #graph-panel.tab-hidden { display: none; }
+
+    #chat-panel {
+      flex: 1;
+      min-height: 0;
+      width: 100%;
+      border-left: none;
+      border-top: 1px solid var(--border);
+    }
+    #chat-panel.tab-hidden { display: none; }
+
+    /* Shrink legend on mobile */
+    .legend { font-size: .65rem; padding: 6px 10px; gap: 3px; }
+    .legend-dot { width: 8px; height: 8px; }
+
+    /* Tooltip touch-friendly */
+    #tooltip { max-width: 180px; font-size: .72rem; }
+  }
 </style>
 </head>
 <body>
@@ -109,6 +167,12 @@
     <span style="color:var(--muted);font-size:.75rem">nodes</span>
   </div>
 </header>
+
+<!-- Mobile tab bar (hidden on desktop via CSS) -->
+<div id="mobile-tabs">
+  <button class="tab-btn active" id="tab-graph" onclick="switchTab('graph')">🔗 Graph</button>
+  <button class="tab-btn" id="tab-chat" onclick="switchTab('chat')">💬 Chat</button>
+</div>
 
 <div class="main">
   <!-- Graph -->
@@ -414,6 +478,38 @@ function addTyping() {
   box.appendChild(div);
   box.scrollTop = box.scrollHeight;
   return div;
+}
+
+
+// ── Mobile Tab Switching ──────────────────────────────────────────────────
+function switchTab(tab) {
+  const graphPanel = document.getElementById('graph-panel');
+  const chatPanel  = document.getElementById('chat-panel');
+  const btnGraph   = document.getElementById('tab-graph');
+  const btnChat    = document.getElementById('tab-chat');
+
+  if (tab === 'graph') {
+    graphPanel.classList.remove('tab-hidden');
+    chatPanel.classList.add('tab-hidden');
+    btnGraph.classList.add('active');
+    btnChat.classList.remove('active');
+    // Re-center force simulation to fit the now-visible panel
+    requestAnimationFrame(() => {
+      if (sim) {
+        const el = document.getElementById('graph-svg');
+        const w = el.clientWidth;
+        const h = el.clientHeight;
+        sim.force('center', d3.forceCenter(w / 2, h / 2));
+        sim.alpha(0.3).restart();
+      }
+      resetZoom();
+    });
+  } else {
+    chatPanel.classList.remove('tab-hidden');
+    graphPanel.classList.add('tab-hidden');
+    btnChat.classList.add('active');
+    btnGraph.classList.remove('active');
+  }
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────
