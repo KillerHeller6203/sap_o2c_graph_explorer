@@ -98,92 +98,89 @@
   .node.highlighted text { fill: #fff !important; font-weight: 700; }
   .memory-badge { background: var(--accent2); color: #0f1117; font-size: .65rem; padding: 1px 7px; border-radius: 999px; font-weight: 600; margin-left: 8px; }
 
-  /* ── Upload Info Button ── */
-  .info-wrap { position: relative; margin-left: auto; display: flex; align-items: center; }
-
+  /* ── Upload + Button ── */
+  .info-wrap { margin-left: auto; display: flex; align-items: center; }
   .info-btn {
-    width: 22px; height: 22px;
-    border-radius: 50%;
-    background: transparent;
-    border: 1.5px solid var(--accent);
-    color: var(--accent);
-    font-size: .8rem; font-weight: 700;
-    cursor: pointer;
+    width: 24px; height: 24px; border-radius: 50%;
+    background: transparent; border: 1.5px solid var(--accent);
+    color: var(--accent); font-size: .9rem; font-weight: 700;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: background .15s, color .15s; flex-shrink: 0; padding: 0;
+  }
+  .info-btn:hover { background: var(--accent); color: #fff; }
+
+  /* ── Upload Modal ── */
+  #upload-modal {
+    position: fixed; inset: 0; z-index: 200;
     display: flex; align-items: center; justify-content: center;
-    transition: background .15s, color .15s;
-    flex-shrink: 0;
-    line-height: 1;
-    padding: 0;
   }
-  .info-btn:hover, .info-btn.open { background: var(--accent); color: #fff; }
+  .modal-backdrop {
+    position: absolute; inset: 0;
+    background: rgba(0,0,0,.65); backdrop-filter: blur(2px);
+  }
+  .modal-box {
+    position: relative; z-index: 1;
+    background: var(--panel); border: 1px solid var(--accent);
+    border-radius: 14px; width: 90%; max-width: 460px;
+    max-height: 90vh; overflow-y: auto;
+    box-shadow: 0 16px 48px rgba(0,0,0,.6);
+    display: flex; flex-direction: column;
+  }
+  .modal-header {
+    padding: 14px 16px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: .9rem; font-weight: 700; color: var(--accent2); flex-shrink: 0;
+  }
+  .modal-close {
+    background: none; border: none; color: var(--muted);
+    font-size: 1.1rem; cursor: pointer; padding: 0 4px;
+    transition: color .15s;
+  }
+  .modal-close:hover { color: var(--danger); }
+  .modal-body { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
 
-  /* Popover panel */
-  .info-popover {
-    position: absolute;
-    top: calc(100% + 10px);
-    right: 0;
-    width: 290px;
-    background: var(--panel);
-    border: 1px solid var(--accent);
-    border-radius: 10px;
-    padding: 14px;
-    font-size: .75rem;
-    line-height: 1.5;
-    color: var(--text);
-    z-index: 100;
-    box-shadow: 0 8px 32px rgba(0,0,0,.5);
-    /* hidden by default */
-    opacity: 0;
-    pointer-events: none;
-    transform: translateY(-6px);
-    transition: opacity .18s ease, transform .18s ease;
+  .upload-rule {
+    background: #242736; border-left: 3px solid var(--accent);
+    border-radius: 6px; padding: 10px 12px; font-size: .78rem; line-height: 1.6;
   }
-  /* show on hover (desktop) */
-  .info-wrap:hover .info-popover,
-  /* show on JS .open class (mobile tap) */
-  .info-popover.open {
-    opacity: 1;
-    pointer-events: all;
-    transform: translateY(0);
+  .upload-label {
+    font-size: .75rem; font-weight: 600; color: var(--muted); display: block;
   }
-  .info-popover h4 {
-    color: var(--accent2);
-    font-size: .8rem;
-    margin-bottom: 8px;
-    display: flex; align-items: center; gap: 6px;
+
+  #entity-select {
+    width: 100%; background: #242736; border: 1px solid var(--border);
+    color: var(--text); border-radius: 8px; padding: 8px 10px;
+    font-size: .82rem; font-family: inherit; cursor: pointer;
   }
-  .info-popover .rule {
-    background: #242736;
-    border-radius: 6px;
-    padding: 7px 10px;
-    margin-bottom: 8px;
-    border-left: 3px solid var(--accent);
-  }
-  .info-popover .rule b { color: var(--accent2); display: block; margin-bottom: 3px; font-size: .72rem; }
-  .info-popover .entity-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 3px 8px;
-    margin-top: 6px;
-  }
-  .info-popover .entity-grid span {
+  #entity-select:focus { outline: none; border-color: var(--accent); }
+
+  .drop-zone {
+    border: 2px dashed var(--border); border-radius: 10px;
+    padding: 24px 16px; text-align: center; cursor: pointer;
+    transition: border-color .15s, background .15s; font-size: .8rem;
     color: var(--muted);
-    font-size: .68rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
   }
-  .info-popover .entity-grid span::before { content: '• '; color: var(--accent); }
+  .drop-zone:hover, .drop-zone.drag-over {
+    border-color: var(--accent); background: rgba(108,99,255,.06);
+    color: var(--text);
+  }
+  .drop-zone.has-file { border-color: var(--accent2); background: rgba(0,212,170,.06); color: var(--accent2); }
+  .drop-icon { font-size: 1.6rem; margin-bottom: 6px; }
 
-  /* On mobile, popover goes up so it doesn't clip */
-  @media (max-width: 767px) {
-    .info-popover {
-      top: auto;
-      bottom: calc(100% + 10px);
-      right: 0;
-      width: 270px;
-    }
+  .upload-status {
+    border-radius: 8px; padding: 10px 12px; font-size: .8rem; line-height: 1.5;
   }
+  .upload-status.info    { background: rgba(108,99,255,.15); color: var(--accent); }
+  .upload-status.success { background: rgba(0,212,170,.15);  color: var(--accent2); }
+  .upload-status.error   { background: rgba(255,107,107,.15); color: var(--danger); }
+
+  .upload-btn {
+    background: var(--accent); color: #fff; border: none;
+    border-radius: 8px; padding: 11px; font-size: .85rem;
+    font-weight: 600; cursor: pointer; transition: opacity .15s; width: 100%;
+  }
+  .upload-btn:hover { opacity: .88; }
+  .upload-btn:disabled { opacity: .45; cursor: not-allowed; }
 
   /* ══ MOBILE ≤767px — graph top, chat bottom, always both visible ══ */
   @media (max-width: 767px) {
@@ -263,51 +260,8 @@
     <div id="chat-header">
       Conversational Query Interface
       <span class="memory-badge" id="mem-badge" style="display:none">memory</span>
-
-      <!-- + Info / Upload rules button -->
       <div class="info-wrap">
-        <button class="info-btn" id="info-btn" onclick="toggleInfoPopover(event)" aria-label="Data upload requirements">+</button>
-        <div class="info-popover" id="info-popover">
-          <h4>📂 Data Upload Requirements</h4>
-
-          <div class="rule">
-            <b>File Format</b>
-            <code style="color:var(--accent2)">.jsonl</code> &nbsp;— one JSON object per line.<br>
-            Field names must match <strong>SAP OData API</strong> camelCase keys exactly.
-          </div>
-
-          <div class="rule">
-            <b>How to add data</b>
-            Drop your <code>.jsonl</code> file into the matching folder inside
-            <code style="color:var(--accent)">backend/data/</code> then re-run
-            <code>python ingest.py</code>.
-          </div>
-
-          <div class="rule" style="border-color:var(--accent2)">
-            <b>19 Supported Entity Types</b>
-            <div class="entity-grid">
-              <span>business_partners</span>
-              <span>business_partner_addresses</span>
-              <span>products</span>
-              <span>product_descriptions</span>
-              <span>plants</span>
-              <span>product_plants</span>
-              <span>product_storage_locations</span>
-              <span>sales_order_headers</span>
-              <span>sales_order_items</span>
-              <span>sales_order_schedule_lines</span>
-              <span>outbound_delivery_headers</span>
-              <span>outbound_delivery_items</span>
-              <span>billing_document_headers</span>
-              <span>billing_document_items</span>
-              <span>billing_document_cancellations</span>
-              <span>journal_entry_items_accounts_receivable</span>
-              <span>payments_accounts_receivable</span>
-              <span>customer_company_assignments</span>
-              <span>customer_sales_area_assignments</span>
-            </div>
-          </div>
-        </div>
+        <button class="info-btn" id="info-btn" onclick="openUploadModal()" aria-label="Upload data">+</button>
       </div>
     </div>
     <div id="suggestions">
@@ -323,6 +277,65 @@
     <div id="input-area">
       <textarea id="query-input" placeholder="Ask a question about the data…" onkeydown="handleKey(event)"></textarea>
       <button id="send-btn" onclick="sendQuery()">➤</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Upload Modal ─────────────────────────────────────────────────────── -->
+<div id="upload-modal" style="display:none">
+  <div class="modal-backdrop" onclick="closeUploadModal()"></div>
+  <div class="modal-box">
+    <div class="modal-header">
+      <span>📂 Upload SAP O2C Data</span>
+      <button class="modal-close" onclick="closeUploadModal()">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <!-- Format rule -->
+      <div class="upload-rule">
+        <strong style="color:var(--accent2)">.jsonl format</strong> — one JSON object per line.<br>
+        Field names must match <strong>SAP OData API</strong> camelCase keys exactly.
+      </div>
+
+      <!-- Entity type selector -->
+      <label class="upload-label">1. Select Entity Type</label>
+      <select id="entity-select">
+        <option value="">— choose entity type —</option>
+        <option>business_partners</option>
+        <option>business_partner_addresses</option>
+        <option>products</option>
+        <option>product_descriptions</option>
+        <option>plants</option>
+        <option>product_plants</option>
+        <option>product_storage_locations</option>
+        <option>sales_order_headers</option>
+        <option>sales_order_items</option>
+        <option>sales_order_schedule_lines</option>
+        <option>outbound_delivery_headers</option>
+        <option>outbound_delivery_items</option>
+        <option>billing_document_headers</option>
+        <option>billing_document_items</option>
+        <option>billing_document_cancellations</option>
+        <option>journal_entry_items_accounts_receivable</option>
+        <option>payments_accounts_receivable</option>
+        <option>customer_company_assignments</option>
+        <option>customer_sales_area_assignments</option>
+      </select>
+
+      <!-- File drop zone -->
+      <label class="upload-label">2. Choose .jsonl File</label>
+      <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()"
+           ondragover="dzDragOver(event)" ondragleave="dzDragLeave(event)" ondrop="dzDrop(event)">
+        <div class="drop-icon">⬆</div>
+        <div id="drop-text">Drag &amp; drop your <code>.jsonl</code> file here<br><small>or click to browse</small></div>
+        <input type="file" id="file-input" accept=".jsonl" style="display:none" onchange="fileChosen(event)">
+      </div>
+
+      <!-- Status message -->
+      <div id="upload-status" class="upload-status" style="display:none"></div>
+
+      <!-- Action button -->
+      <button id="upload-btn" class="upload-btn" onclick="doUpload()">⬆ Upload &amp; Ingest</button>
     </div>
   </div>
 </div>
@@ -595,28 +608,88 @@ function addTyping() {
 }
 
 
-// ── Info Popover (mobile tap toggle) ─────────────────────────────────────
-function toggleInfoPopover(e) {
-  e.stopPropagation();
-  const pop = document.getElementById('info-popover');
-  const btn = document.getElementById('info-btn');
-  const isOpen = pop.classList.contains('open');
-  pop.classList.toggle('open', !isOpen);
-  btn.classList.toggle('open', !isOpen);
+// ── Upload Modal ───────────────────────────────────────────────────────────
+let chosenFile = null;
+
+function openUploadModal() {
+  document.getElementById('upload-modal').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
 }
-// Close when tapping anywhere else
-document.addEventListener('click', function(e) {
-  const wrap = document.querySelector('.info-wrap');
-  if (wrap && !wrap.contains(e.target)) {
-    document.getElementById('info-popover').classList.remove('open');
-    document.getElementById('info-btn').classList.remove('open');
+function closeUploadModal() {
+  document.getElementById('upload-modal').style.display = 'none';
+  document.body.style.overflow = '';
+  resetUploadForm();
+}
+function resetUploadForm() {
+  chosenFile = null;
+  document.getElementById('entity-select').value = '';
+  document.getElementById('file-input').value = '';
+  document.getElementById('drop-text').innerHTML = 'Drag &amp; drop your <code>.jsonl</code> file here<br><small>or click to browse</small>';
+  document.getElementById('drop-zone').className = 'drop-zone';
+  setStatus('', '');
+  document.getElementById('upload-btn').disabled = false;
+}
+
+// Drag-and-drop handlers
+function dzDragOver(e) { e.preventDefault(); document.getElementById('drop-zone').classList.add('drag-over'); }
+function dzDragLeave()  { document.getElementById('drop-zone').classList.remove('drag-over'); }
+function dzDrop(e) {
+  e.preventDefault();
+  dzDragLeave();
+  const f = e.dataTransfer.files[0];
+  if (f) applyFile(f);
+}
+function fileChosen(e) { if (e.target.files[0]) applyFile(e.target.files[0]); }
+function applyFile(f) {
+  if (!f.name.endsWith('.jsonl')) {
+    setStatus('❌ Only .jsonl files are accepted.', 'error');
+    return;
   }
-});
+  chosenFile = f;
+  document.getElementById('drop-text').innerHTML = `✅ <strong>${f.name}</strong><br><small>${(f.size/1024).toFixed(1)} KB — click to change</small>`;
+  document.getElementById('drop-zone').className = 'drop-zone has-file';
+  setStatus('', '');
+}
+
+function setStatus(msg, type) {
+  const el = document.getElementById('upload-status');
+  el.style.display = msg ? 'block' : 'none';
+  el.className = 'upload-status ' + type;
+  el.textContent = msg;
+}
+
+async function doUpload() {
+  const entityType = document.getElementById('entity-select').value;
+  if (!entityType) { setStatus('⚠ Please select an entity type.', 'error'); return; }
+  if (!chosenFile)  { setStatus('⚠ Please choose a .jsonl file.', 'error'); return; }
+
+  const btn = document.getElementById('upload-btn');
+  btn.disabled = true;
+  setStatus('⏳ Uploading and ingesting… this may take a few seconds.', 'info');
+
+  const form = new FormData();
+  form.append('entity_type', entityType);
+  form.append('file', chosenFile);
+
+  try {
+    const res = await fetch('/upload', { method: 'POST', body: form });
+    const data = await res.json();
+    if (res.ok) {
+      setStatus(`✅ ${data.message}`, 'success');
+      // Refresh graph with new data
+      setTimeout(() => { loadGraph(30); closeUploadModal(); }, 1800);
+    } else {
+      setStatus(`❌ ${data.detail || 'Upload failed.'}`, 'error');
+      btn.disabled = false;
+    }
+  } catch(err) {
+    setStatus('❌ Network error. Is the backend running?', 'error');
+    btn.disabled = false;
+  }
+}
 
 // ── Init ──────────────────────────────────────────────────────────────────
 initGraph();
-// Use requestAnimationFrame so the layout is fully painted (and SVG has real
-// clientWidth/clientHeight) before we build the force simulation.
 requestAnimationFrame(() => loadGraph(30));
 </script>
 </body>
