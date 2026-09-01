@@ -98,6 +98,93 @@
   .node.highlighted text { fill: #fff !important; font-weight: 700; }
   .memory-badge { background: var(--accent2); color: #0f1117; font-size: .65rem; padding: 1px 7px; border-radius: 999px; font-weight: 600; margin-left: 8px; }
 
+  /* ── Upload Info Button ── */
+  .info-wrap { position: relative; margin-left: auto; display: flex; align-items: center; }
+
+  .info-btn {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: transparent;
+    border: 1.5px solid var(--accent);
+    color: var(--accent);
+    font-size: .8rem; font-weight: 700;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background .15s, color .15s;
+    flex-shrink: 0;
+    line-height: 1;
+    padding: 0;
+  }
+  .info-btn:hover, .info-btn.open { background: var(--accent); color: #fff; }
+
+  /* Popover panel */
+  .info-popover {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    width: 290px;
+    background: var(--panel);
+    border: 1px solid var(--accent);
+    border-radius: 10px;
+    padding: 14px;
+    font-size: .75rem;
+    line-height: 1.5;
+    color: var(--text);
+    z-index: 100;
+    box-shadow: 0 8px 32px rgba(0,0,0,.5);
+    /* hidden by default */
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-6px);
+    transition: opacity .18s ease, transform .18s ease;
+  }
+  /* show on hover (desktop) */
+  .info-wrap:hover .info-popover,
+  /* show on JS .open class (mobile tap) */
+  .info-popover.open {
+    opacity: 1;
+    pointer-events: all;
+    transform: translateY(0);
+  }
+  .info-popover h4 {
+    color: var(--accent2);
+    font-size: .8rem;
+    margin-bottom: 8px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .info-popover .rule {
+    background: #242736;
+    border-radius: 6px;
+    padding: 7px 10px;
+    margin-bottom: 8px;
+    border-left: 3px solid var(--accent);
+  }
+  .info-popover .rule b { color: var(--accent2); display: block; margin-bottom: 3px; font-size: .72rem; }
+  .info-popover .entity-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3px 8px;
+    margin-top: 6px;
+  }
+  .info-popover .entity-grid span {
+    color: var(--muted);
+    font-size: .68rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .info-popover .entity-grid span::before { content: '• '; color: var(--accent); }
+
+  /* On mobile, popover goes up so it doesn't clip */
+  @media (max-width: 767px) {
+    .info-popover {
+      top: auto;
+      bottom: calc(100% + 10px);
+      right: 0;
+      width: 270px;
+    }
+  }
+
   /* ══ MOBILE ≤767px — graph top, chat bottom, always both visible ══ */
   @media (max-width: 767px) {
     header { padding: 8px 12px; }
@@ -173,7 +260,56 @@
 
   <!-- Chat -->
   <div id="chat-panel">
-    <div id="chat-header">Conversational Query Interface<span class="memory-badge" id="mem-badge" style="display:none">memory</span></div>
+    <div id="chat-header">
+      Conversational Query Interface
+      <span class="memory-badge" id="mem-badge" style="display:none">memory</span>
+
+      <!-- + Info / Upload rules button -->
+      <div class="info-wrap">
+        <button class="info-btn" id="info-btn" onclick="toggleInfoPopover(event)" aria-label="Data upload requirements">+</button>
+        <div class="info-popover" id="info-popover">
+          <h4>📂 Data Upload Requirements</h4>
+
+          <div class="rule">
+            <b>File Format</b>
+            <code style="color:var(--accent2)">.jsonl</code> &nbsp;— one JSON object per line.<br>
+            Field names must match <strong>SAP OData API</strong> camelCase keys exactly.
+          </div>
+
+          <div class="rule">
+            <b>How to add data</b>
+            Drop your <code>.jsonl</code> file into the matching folder inside
+            <code style="color:var(--accent)">backend/data/</code> then re-run
+            <code>python ingest.py</code>.
+          </div>
+
+          <div class="rule" style="border-color:var(--accent2)">
+            <b>19 Supported Entity Types</b>
+            <div class="entity-grid">
+              <span>business_partners</span>
+              <span>business_partner_addresses</span>
+              <span>products</span>
+              <span>product_descriptions</span>
+              <span>plants</span>
+              <span>product_plants</span>
+              <span>product_storage_locations</span>
+              <span>sales_order_headers</span>
+              <span>sales_order_items</span>
+              <span>sales_order_schedule_lines</span>
+              <span>outbound_delivery_headers</span>
+              <span>outbound_delivery_items</span>
+              <span>billing_document_headers</span>
+              <span>billing_document_items</span>
+              <span>billing_document_cancellations</span>
+              <span>journal_entry_items_accounts_receivable</span>
+              <span>payments_accounts_receivable</span>
+              <span>customer_company_assignments</span>
+              <span>customer_sales_area_assignments</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
     <div id="suggestions">
       <span class="sug" onclick="fillQuery(this)">Which products have most billing docs?</span>
       <span class="sug" onclick="fillQuery(this)">Trace billing doc 90504298</span>
@@ -457,6 +593,25 @@ function addTyping() {
   box.scrollTop = box.scrollHeight;
   return div;
 }
+
+
+// ── Info Popover (mobile tap toggle) ─────────────────────────────────────
+function toggleInfoPopover(e) {
+  e.stopPropagation();
+  const pop = document.getElementById('info-popover');
+  const btn = document.getElementById('info-btn');
+  const isOpen = pop.classList.contains('open');
+  pop.classList.toggle('open', !isOpen);
+  btn.classList.toggle('open', !isOpen);
+}
+// Close when tapping anywhere else
+document.addEventListener('click', function(e) {
+  const wrap = document.querySelector('.info-wrap');
+  if (wrap && !wrap.contains(e.target)) {
+    document.getElementById('info-popover').classList.remove('open');
+    document.getElementById('info-btn').classList.remove('open');
+  }
+});
 
 // ── Init ──────────────────────────────────────────────────────────────────
 initGraph();
