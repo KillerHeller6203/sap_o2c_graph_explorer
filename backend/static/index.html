@@ -17,7 +17,7 @@
     --muted: #8892a0;
     --danger: #ff6b6b;
   }
-  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; height: 100vh; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
 
   /* Header */
   header { padding: 12px 20px; background: var(--panel); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
@@ -26,10 +26,10 @@
   .badge { background: var(--accent); color: #fff; font-size: .7rem; padding: 2px 8px; border-radius: 999px; font-weight: 600; }
 
   /* Main layout */
-  .main { display: flex; flex: 1; overflow: hidden; }
+  .main { display: flex; flex: 1; overflow: hidden; min-height: 0; }
 
   /* Graph panel */
-  #graph-panel { flex: 1; position: relative; overflow: hidden; background: var(--bg); }
+  #graph-panel { flex: 1; position: relative; overflow: hidden; background: var(--bg); min-height: 0; }
   #graph-svg { width: 100%; height: 100%; }
 
   /* Legend */
@@ -48,10 +48,10 @@
   #tooltip .meta-row { color: var(--muted); margin-top: 2px; }
 
   /* Chat panel */
-  #chat-panel { width: 380px; display: flex; flex-direction: column; border-left: 1px solid var(--border); background: var(--panel); flex-shrink: 0; }
-  #chat-header { padding: 12px 16px; border-bottom: 1px solid var(--border); font-size: .85rem; font-weight: 600; color: var(--accent2); display: flex; align-items: center; gap: 8px; }
+  #chat-panel { width: 380px; display: flex; flex-direction: column; border-left: 1px solid var(--border); background: var(--panel); flex-shrink: 0; overflow: hidden; min-height: 0; }
+  #chat-header { padding: 12px 16px; border-bottom: 1px solid var(--border); font-size: .85rem; font-weight: 600; color: var(--accent2); display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
   #chat-header::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--accent2); display: inline-block; }
-  #messages { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+  #messages { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 10px; min-height: 0; }
   .msg { max-width: 100%; padding: 10px 13px; border-radius: 10px; font-size: .83rem; line-height: 1.5; animation: fadeIn .2s; }
   .msg.user { background: var(--accent); color: #fff; align-self: flex-end; border-bottom-right-radius: 3px; }
   .msg.bot { background: #242736; color: var(--text); align-self: flex-start; border-bottom-left-radius: 3px; }
@@ -67,7 +67,7 @@
   @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 
   /* Input area */
-  #input-area { padding: 10px 12px; border-top: 1px solid var(--border); display: flex; gap: 8px; }
+  #input-area { padding: 10px 12px; border-top: 1px solid var(--border); display: flex; gap: 8px; flex-shrink: 0; }
   #query-input { flex: 1; background: #242736; border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 8px 12px; font-size: .83rem; resize: none; height: 60px; font-family: inherit; }
   #query-input:focus { outline: none; border-color: var(--accent); }
   #send-btn { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 0 16px; cursor: pointer; font-size: 1.1rem; transition: opacity .15s; }
@@ -75,7 +75,7 @@
   #send-btn:disabled { opacity: .5; cursor: not-allowed; }
 
   /* Suggestions */
-  #suggestions { padding: 0 12px 10px; display: flex; flex-wrap: wrap; gap: 6px; }
+  #suggestions { padding: 0 12px 10px; display: flex; flex-wrap: wrap; gap: 6px; flex-shrink: 0; }
   .sug { background: #242736; border: 1px solid var(--border); color: var(--muted); border-radius: 999px; padding: 4px 10px; font-size: .72rem; cursor: pointer; transition: all .15s; }
   .sug:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
 
@@ -98,7 +98,7 @@
   .node.highlighted text { fill: #fff !important; font-weight: 700; }
   .memory-badge { background: var(--accent2); color: #0f1117; font-size: .65rem; padding: 1px 7px; border-radius: 999px; font-weight: 600; margin-left: 8px; }
 
-  /* ══ MOBILE ≤767px — graph top half, chat bottom half, always both visible ══ */
+  /* ══ MOBILE ≤767px — graph top, chat bottom, always both visible ══ */
   @media (max-width: 767px) {
     header { padding: 8px 12px; }
     header h1 { font-size: .85rem; }
@@ -107,21 +107,25 @@
     /* Stack vertically */
     .main { flex-direction: column; }
 
-    /* Graph: fixed top portion */
+    /* Graph: fixed top portion — 42vh leaves enough room for chat + input */
     #graph-panel {
-      flex: 0 0 46vh;
+      flex: 0 0 42vh;
       width: 100%;
       min-height: 0;
       border-bottom: 2px solid var(--border);
     }
 
-    /* Chat: fill the rest */
+    /* Chat: fill the remaining space; overflow:hidden so children don't escape */
     #chat-panel {
       flex: 1;
       width: 100%;
       border-left: none;
       min-height: 0;
+      overflow: hidden;
     }
+
+    /* Input slightly smaller so it fits */
+    #query-input { height: 44px; }
 
     /* Tighter legend */
     .legend { font-size: .62rem; padding: 5px 8px; gap: 3px; top: 6px; left: 6px; }
@@ -133,10 +137,8 @@
 
     /* Touch-friendly tooltip */
     #tooltip { max-width: 170px; font-size: .7rem; }
-
-    /* Tighter input */
-    #query-input { height: 44px; }
   }
+
 </style>
 </head>
 <body>
